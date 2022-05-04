@@ -1,0 +1,7 @@
+build.your-domain.com {
+  reverse_proxy / jenkins:8080
+}
+
+docker-registry.your-domain.com {
+  reverse_proxy / docker-registry:5000
+}

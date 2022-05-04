@@ -1,0 +1,64 @@
+version: '3.8'
+services:
+  # expander: 
+  #   build:
+  #     context: ./expander
+  #     dockerfile: Dockerfile
+  #   image: shortify/expander
+  #   ports:
+  #    - "3002:3000"
+  #   volumes:
+  #    - ./expander:/usr/src/app  
+   
+  #   networks:
+  #    - shortify
+  # shortener: 
+  #   build:
+  #    context: ./shortener
+  #    dockerfile: Dockerfile
+  #   image: shortify/shortener
+  #   ports:
+  #    - "3000:3000"
+  #   volumes:
+  #    - ./shortener:/usr/src/app  
+   
+  #   networks:
+  #    - shortify      
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - shortify    
+  mysql:
+    platform: linux/x86_64
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: shortifyDB
+      MYSQL_USER: shortify
+      MYSQL_PASSWORD: "shortify!"
+    volumes:
+      - volume_mysql:/var/lib/mysql
+    networks:
+      - shortify
+    ports:
+      - 3306:3306
+  redis:
+    image: redis:latest
+    volumes:
+      - volume_redis:/data
+    ports:
+      - 6379:6379  
+    networks:
+      - shortify      
+networks:
+  shortify:
+    external: true
+volumes:
+  volume_mysql:
+    driver: "local"    
+  volume_redis:
+    driver: "local"   
+

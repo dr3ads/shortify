@@ -1,0 +1,86 @@
+version: '3'
+services:
+
+  # Jenkins for CI/CD
+  jenkins:
+    build:
+      context: .
+      dockerfile: jenkins.Dockerfile
+    container_name: jenkins
+    restart: always
+    privileged: true
+    environment:
+      - "JAVA_OPTS=-Dhudson.footerURL=https://your-domain.com"
+    volumes:
+      - ./jenkins/jenkins_home:/var/jenkins_home
+
+      # Required to run docker inside jenkins...
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - /usr/lib64/libltdl.so.7:/usr/lib/x86_64-linux-gnu/libltdl.so.7
+      - /etc/localtime:/etc/localtime
+      - /usr/local/bin/docker-compose:/sbin/docker-compose
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    networks:
+      - internal
+    healthcheck:
+      test: curl -sS http://127.0.0.1:8080 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+  # Caddy to proxy pass things together...
+  caddy:
+    image: reverie89/caddy
+    container_name: caddy
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./caddy/Caddyfile:/etc/Caddyfile
+      - ./caddy/.caddy:/root/.caddy
+    networks:
+      - external
+      - internal
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+    healthcheck:
+      test: curl -sS http://127.0.0.1:80 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  docker-registry:
+    restart: always
+    image: registry:2.5.2
+    container_name: docker-registry
+    networks:
+      - internal
+      - external
+    expose:
+      - 65534
+    ports:
+      - "65534:5000"
+    environment:
+      - REGISTRY_STORAGE=s3
+      - REGISTRY_STORAGE_S3_REGION=ap-southeast-1
+      - REGISTRY_STORAGE_S3_BUCKET=${S3_BUCKET}
+      - REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR=inmemory
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+        
+networks:
+  internal:
+    external: false
+  external:
+    driver: bridge

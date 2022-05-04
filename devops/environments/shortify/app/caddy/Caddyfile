@@ -1,0 +1,8 @@
+shortener.your-domain.com {
+
+  reverse_proxy / shortener:3000
+}
+
+shorti.fy {
+  reverse_proxy / expander:3000
+}

@@ -1,0 +1,84 @@
+version: '3'
+services:
+
+  # Caddy to proxy pass things together...
+  caddy:
+
+    image: reverie89/caddy
+    container_name: caddy
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/.caddy:/root/.caddy
+    networks:
+      - shortify-net
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  shortener:
+    container_name: api
+    image: docker-registry.your-domain.com/shortify/shortner:${ENVIRONMENT:-latest}
+    restart: always
+    privileged: true
+    ports:
+      - 3000:3000
+    volumes:
+      - ./api/ormconfig.json:./ormconfig.json
+      - ./api/.env:./.env
+    networks:
+      - shortify-net
+
+  expander:
+    container_name: api
+    image: docker-registry.your-domain.com/shortify/expander:${ENVIRONMENT:-latest}
+    restart: always
+    privileged: true
+    ports:
+      - 3002:3000
+    volumes:
+      - ./api/ormconfig.json:./ormconfig.json
+      - ./api/.env:./.env
+    networks:
+      - shortify-net
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - shortify-net   
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD} 
+    volumes:
+      - volume_mysql:/var/lib/mysql
+      # - ./docker/mysql/conf.d:/etc/mysql/conf.d
+      # - ./docker/mysql/logs:/var/log/mysql
+    networks:
+      - shortify-net
+  redis:
+    image: redis:alpine
+    volumes:
+      - volume_redis:/data
+    networks:
+      - shortify-net    
+networks:
+  learninghub-net:
+    external: true
+volumes:
+  volume_mysql:
+    driver: "local"    
+  volume_redis:
+    driver: "local"    
+    

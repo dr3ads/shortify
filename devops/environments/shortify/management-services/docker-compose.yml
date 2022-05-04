@@ -1,0 +1,45 @@
+version: '3'
+services:
+
+  # Used to auto-deploy images built by our build server/docker hub...
+  watchtower:
+    # Please see the following for configuration options:
+    #    https://containrrr.github.io/watchtower/container-selection/
+    image: containrrr/watchtower
+    container_name: watchtower
+
+    restart: always
+    privileged: true
+
+    # Need to connect to discord...
+
+    environment:
+      - "WATCHTOWER_NOTIFICATIONS=slack"
+      - "WATCHTOWER_NOTIFICATION_SLACK_HOOK_URL="
+      - "WATCHTOWER_NOTIFICATION_SLACK_IDENTIFIER=STAGE"
+      - "WATCHTOWER_NOTIFICATION_SLACK_CHANNEL=#notifications"
+    #  - "WATCHTOWER_NOTIFICATION_SLACK_ICON_EMOJI=:whale:"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    #command: --interval 30 --debug
+    command: --interval 30
+
+  # Simple service to 'kick' any unhealthy/failed containers based on their docker healthcheck...
+  autoheal:
+    image: willfarrell/autoheal
+    container_name: autoheal
+
+    restart: always
+    privileged: true
+
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  learninghub-net:
+    external: true
